@@ -30,7 +30,50 @@ zend_module_entry tikapot_module_entry = {
 ZEND_GET_MODULE(tikapot)
 #endif
 
+int strpos(char *haystack, char *needle)
+{
+	char *p = strstr(haystack, needle);
+	if (p)
+		return p - haystack;
+	return -1;
+}
+
+char *substr(const char *text, int position, int length)
+{
+   char *temp = malloc(length + 1);
+   int i, j;
+
+   for (i = position, j = 0; i < position + length; i++, j++)
+   {
+       temp[j] = text[i];
+   }
+   temp[j] = '\0';
+
+   return temp;
+}
+
 PHP_FUNCTION(tp_str_partition)
 {
-    RETURN_STRING("", 1);
+	char *arg_haystack, *arg_needle;
+	int haystack_len, needle_len;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &arg_haystack, &haystack_len, &arg_needle, &needle_len) == FAILURE) {
+        RETURN_NULL();
+	}
+	
+	int pos = strpos(arg_haystack, arg_needle);
+	if (pos > -1) {		
+		char *first_arg = substr(arg_haystack, 0, pos);
+		char *second_arg = substr(arg_haystack, pos + strlen(arg_needle), strlen(arg_haystack));
+		
+		array_init(return_value);
+		add_next_index_stringl(return_value, first_arg, strlen(first_arg), 1);
+		add_next_index_stringl(return_value, arg_needle, needle_len, 1);
+		add_next_index_stringl(return_value, second_arg, strlen(second_arg), 1);
+		return;
+	}
+	array_init(return_value);
+	add_next_index_stringl(return_value, arg_haystack, haystack_len, 1);
+	add_next_index_stringl(return_value, arg_needle, needle_len, 1);
+	add_next_index_stringl(return_value, "", 0, 1);
 }
+
