@@ -7,6 +7,7 @@
 static function_entry tikapot_functions[] = {
     PHP_FE(tp_str_begins, NULL)
     PHP_FE(tp_str_partition, NULL)
+    PHP_FE(tp_str_ends, NULL)
     {NULL, NULL, NULL}
 };
 
@@ -53,6 +54,13 @@ char *substr(const char *text, int position, int length)
    return temp;
 }
 
+void strrev(char *p)
+{
+  char *q = p;
+  while(q && *q) ++q;
+  for(--q; p < q; ++p, --q) SWP(*p, *q);
+}
+
 PHP_FUNCTION(tp_str_begins)
 {
 	char *arg_haystack, *arg_needle;
@@ -87,5 +95,15 @@ PHP_FUNCTION(tp_str_partition)
 	add_next_index_stringl(return_value, arg_haystack, haystack_len, 1);
 	add_next_index_stringl(return_value, arg_needle, needle_len, 1);
 	add_next_index_stringl(return_value, "", 0, 1);
+}
+
+PHP_FUNCTION(tp_str_ends)
+{
+	char *arg_haystack, *arg_needle;
+	int haystack_len, needle_len;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &arg_haystack, &haystack_len, &arg_needle, &needle_len) == FAILURE) {
+        RETURN_NULL();
+	}
+	RETURN_BOOL(strrpos(arg_haystack, arg_needle) == (haystack_len - needle_len));
 }
 
