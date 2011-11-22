@@ -5,6 +5,7 @@
 #include "php_tikapot.h"
 
 static function_entry tikapot_functions[] = {
+    PHP_FE(tp_str_begins, NULL)
     PHP_FE(tp_str_partition, NULL)
     {NULL, NULL, NULL}
 };
@@ -40,7 +41,7 @@ int strpos(char *haystack, char *needle)
 
 char *substr(const char *text, int position, int length)
 {
-   char *temp = malloc(length + 1);
+   char *temp = emalloc(length + 1);
    int i, j;
 
    for (i = position, j = 0; i < position + length; i++, j++)
@@ -50,6 +51,16 @@ char *substr(const char *text, int position, int length)
    temp[j] = '\0';
 
    return temp;
+}
+
+PHP_FUNCTION(tp_str_begins)
+{
+	char *arg_haystack, *arg_needle;
+	int haystack_len, needle_len;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &arg_haystack, &haystack_len, &arg_needle, &needle_len) == FAILURE) {
+        RETURN_NULL();
+	}
+	RETURN_BOOL(strcmp(substr(arg_haystack, 0, needle_len), arg_needle) == 0);
 }
 
 PHP_FUNCTION(tp_str_partition)
@@ -63,12 +74,13 @@ PHP_FUNCTION(tp_str_partition)
 	int pos = strpos(arg_haystack, arg_needle);
 	if (pos > -1) {		
 		char *first_arg = substr(arg_haystack, 0, pos);
-		char *second_arg = substr(arg_haystack, pos + strlen(arg_needle), strlen(arg_haystack));
+		char *second_arg = substr(arg_haystack, pos + needle_len, haystack_len);
 		
 		array_init(return_value);
 		add_next_index_stringl(return_value, first_arg, strlen(first_arg), 1);
 		add_next_index_stringl(return_value, arg_needle, needle_len, 1);
 		add_next_index_stringl(return_value, second_arg, strlen(second_arg), 1);
+		
 		return;
 	}
 	array_init(return_value);
