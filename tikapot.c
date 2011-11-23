@@ -32,9 +32,32 @@ zend_module_entry tikapot_module_entry = {
 ZEND_GET_MODULE(tikapot)
 #endif
 
+char* strrstr(const char *haystack, const char *needle)
+{
+	char *r = NULL;
+
+	if (!needle[0])
+		return (char*)haystack + strlen(haystack);
+	while (1) {
+		char *p = strstr(haystack, needle);
+		if (!p)
+			return r;
+		r = p;
+		haystack = p + 1;
+	}
+}
+
 int strpos(char *haystack, char *needle)
 {
 	char *p = strstr(haystack, needle);
+	if (p)
+		return p - haystack;
+	return -1;
+}
+
+int strrpos(char *haystack, char *needle)
+{
+	char *p = strrstr(haystack, needle);
 	if (p)
 		return p - haystack;
 	return -1;
@@ -52,13 +75,6 @@ char *substr(const char *text, int position, int length)
    temp[j] = '\0';
 
    return temp;
-}
-
-void strrev(char *p)
-{
-  char *q = p;
-  while(q && *q) ++q;
-  for(--q; p < q; ++p, --q) SWP(*p, *q);
 }
 
 PHP_FUNCTION(tp_str_begins)
@@ -79,6 +95,14 @@ PHP_FUNCTION(tp_str_partition)
         RETURN_NULL();
 	}
 	
+	if (needle_len > haystack_len || needle_len == 0 || haystack_len == 0) {
+		array_init(return_value);
+		add_next_index_stringl(return_value, arg_haystack, haystack_len, 1);
+		add_next_index_stringl(return_value, arg_needle, needle_len, 1);
+		add_next_index_stringl(return_value, "", 0, 1);
+	}
+		
+	
 	int pos = strpos(arg_haystack, arg_needle);
 	if (pos > -1) {		
 		char *first_arg = substr(arg_haystack, 0, pos);
@@ -91,6 +115,7 @@ PHP_FUNCTION(tp_str_partition)
 		
 		return;
 	}
+	
 	array_init(return_value);
 	add_next_index_stringl(return_value, arg_haystack, haystack_len, 1);
 	add_next_index_stringl(return_value, arg_needle, needle_len, 1);
@@ -104,6 +129,14 @@ PHP_FUNCTION(tp_str_ends)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &arg_haystack, &haystack_len, &arg_needle, &needle_len) == FAILURE) {
         RETURN_NULL();
 	}
-	RETURN_BOOL(strrpos(arg_haystack, arg_needle) == (haystack_len - needle_len));
+	if (haystack_len < needle_len) {
+		RETURN_BOOL(0);
+	}
+	else if (haystack_len == needle_len) {
+		RETURN_BOOL(1);
+	}
+	else if (haystack_len > needle_len) {
+		RETURN_BOOL(strrpos(arg_haystack, arg_needle) == (haystack_len - needle_len));
+	}
 }
 
